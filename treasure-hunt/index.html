@@ -975,9 +975,18 @@
       if (currentStatus === 'confirmed') {
         delete cellMarks[selectedCharId];
       } else {
+        // 1. 鎖定當前格子為 confirmed
         delete cellMarks.__cross_override;
         gameState[key] = { [selectedCharId]: 'confirmed' };
 
+        // 2. 自動清除全圖其他格子中屬於該角色的所有 draft 標記
+        Object.keys(gameState).forEach(k => {
+          if (gameState[k] && gameState[k][selectedCharId] === 'draft') {
+            delete gameState[k][selectedCharId];
+          }
+        });
+
+        // 3. 自動整行整列填入 cross 覆蓋
         for (let i = 0; i < GRID_SIZE; i++) {
           let rowKey = `${r}_${i}`;
           if (i !== c) {
