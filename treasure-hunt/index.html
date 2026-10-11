@@ -47,9 +47,9 @@
       font-size: 28px; 
       text-align: center; 
       word-break: break-word;
-	  white-space: nowrap;
+      white-space: nowrap;
     }
-	
+    
     @media (max-width: 480px) {
       h1 {
         font-size: 20px; /* 手機上自動微調字體大小，確保一行過 */
@@ -430,6 +430,16 @@
       box-shadow: 0 0 2px rgba(0,0,0,0.3);
     }
     
+    /* 角色高亮樣式 (藍色 Highlight) */
+    .char-mark.draft.highlighted {
+      background: #ebf5fb !important;
+      border: 2px solid var(--accent) !important;
+      box-shadow: 0 0 6px rgba(52, 152, 219, 0.6);
+    }
+    .char-mark.confirmed.highlighted {
+      box-shadow: 0 0 10px 3px #3498db !important;
+    }
+    
     .char-mark.confirmed {
       background-color: rgba(241, 196, 15, 0.65);
       border: none;
@@ -635,6 +645,7 @@
         isEraserActive = false;
         selectedCharId = char.id;
         updateToolbarUI();
+        renderGrid(); // 切換角色時同步更新地圖高亮
       };
       paletteEl.appendChild(btn);
     });
@@ -648,6 +659,7 @@
       selectedCharId = null;
     }
     updateToolbarUI();
+    renderGrid();
   }
 
   function toggleEraser() {
@@ -657,6 +669,7 @@
       selectedCharId = null;
     }
     updateToolbarUI();
+    renderGrid();
   }
 
   function updateToolbarUI() {
@@ -1012,7 +1025,7 @@
           const charObj = CHARACTER_DATA.find(ch => ch.id === confirmedKey);
           if (charObj) {
             const mark = document.createElement('div');
-            mark.className = 'char-mark confirmed';
+            mark.className = `char-mark confirmed ${confirmedKey === selectedCharId ? 'highlighted' : ''}`;
             mark.innerText = charObj.name;
             cell.appendChild(mark);
           }
@@ -1024,7 +1037,7 @@
             const charObj = CHARACTER_DATA.find(ch => ch.id === charId);
             if (charObj) {
               const mark = document.createElement('div');
-              mark.className = 'char-mark draft';
+              mark.className = `char-mark draft ${charId === selectedCharId ? 'highlighted' : ''}`;
               mark.innerText = charObj.name;
               draftContainer.appendChild(mark);
             }
