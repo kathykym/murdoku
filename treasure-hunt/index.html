@@ -112,7 +112,7 @@
     .game-layout {
       display: flex;
       gap: 15px;
-      align-items: flex-start;
+      align-items: stretch; /* 讓側邊欄與地圖高度自動看齊！ */
       width: max-content;
       max-width: 100%;
     }
@@ -128,7 +128,8 @@
       border-radius: 8px;
       border: 2px solid #ccd0d5;
       box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-      max-height: 82vh;
+      height: 100%; /* 撐滿外層 stretch 的高度 */
+      max-height: 1052px; /* 鎖死高度同地圖一致 */
       overflow-y: auto;
       scrollbar-width: thin;
       width: 310px;
