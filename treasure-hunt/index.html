@@ -430,7 +430,7 @@
   <div class="game-layout">
     <div class="sidebar">
       <div class="tools-row">
-        <button class="tool-btn cross-btn" id="crossBtn" onclick="toggleCrossMode()">❌ 打叉</button>
+        <button class="tool-btn cross-btn" id="crossBtn" onclick="toggleCrossMode()">✖️ 打叉</button>
         <button class="tool-btn eraser-btn" id="eraserBtn" onclick="toggleEraser()">🧹 擦膠</button>
         <button class="tool-btn" id="undoBtn" onclick="undoAction()" disabled>↩️ Undo</button>
       </div>
@@ -926,7 +926,7 @@
         if (cellMarks.__cross_override === 'cross') {
           const mark = document.createElement('div');
           mark.className = 'char-mark cross';
-          mark.innerText = '❌';
+          mark.innerText = '✖️';
           cell.appendChild(mark);
           continue;
         }
