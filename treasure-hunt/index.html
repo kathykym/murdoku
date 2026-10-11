@@ -30,6 +30,7 @@
       padding: 10px 10px 30px 10px;
       user-select: none;
       -webkit-user-select: none;
+      touch-action: manipulation;
     }
     h1 { margin: 5px 0 10px 0; font-size: 20px; }
 
@@ -235,7 +236,7 @@
       padding: 6px;
       box-shadow: 0 4px 6px rgba(0,0,0,0.05);
       overflow-x: auto;
-      touch-action: none;
+      touch-action: none; /* 防止滑動地圖時觸發網頁滾動 */
     }
 
     .map-row-container {
@@ -275,6 +276,7 @@
       height: 960px;
       background-color: #fff;
       flex-shrink: 0;
+      touch-action: none;
     }
 
     .map-bg-img {
@@ -299,6 +301,7 @@
       grid-template-columns: repeat(24, 40px);
       grid-template-rows: repeat(24, 40px);
       z-index: 1;
+      touch-action: none;
     }
 
     .cell {
@@ -312,6 +315,7 @@
       justify-content: center;
       cursor: pointer;
       position: relative;
+      touch-action: none;
     }
     .cell:hover { background-color: var(--card-hover); }
 
@@ -325,6 +329,7 @@
       box-sizing: border-box;
       align-content: center;
       justify-items: center;
+      pointer-events: none; /* 確保屬性不影響抓取 .cell */
     }
 
     .char-mark {
@@ -336,6 +341,7 @@
       width: 100%;
       height: 100%;
       border-radius: 2px;
+      pointer-events: none;
     }
     .char-mark.draft {
       background: rgba(255, 255, 255, 0.85);
@@ -756,36 +762,43 @@
         cell.addEventListener('mouseenter', enterAction);
 
         cell.addEventListener('touchstart', (e) => {
-          e.preventDefault();
+          // 阻止滾動與預設點擊事件，確保滑動能正常處理
+          if (e.cancelable) e.preventDefault();
           startAction(e);
-        });
-
-        cell.addEventListener('touchmove', (e) => {
-          const touch = e.touches[0];
-          const target = document.elementFromPoint(touch.clientX, touch.clientY);
-          if (target && target.classList.contains('cell')) {
-            const targetKey = target.dataset.key;
-            if (targetKey && !draggedCells.has(targetKey)) {
-              cancelLongPress();
-
-              const [tr, tc] = targetKey.split('_').map(Number);
-              if (isEraserActive) {
-                handleCellAction(tr, tc, 'eraser');
-              } else if (dragIntent) {
-                const targetMarks = gameState[targetKey] || {};
-                const hasAnyConfirmed = Object.values(targetMarks).includes('confirmed');
-                if (isCrossModeActive || (!hasAnyConfirmed && targetMarks.__cross_override !== 'cross')) {
-                  handleCellAction(tr, tc, 'drag-apply', dragIntent);
-                }
-              }
-              draggedCells.add(targetKey);
-            }
-          }
-        });
+        }, { passive: false });
 
         gridEl.appendChild(cell);
       }
     }
+
+    // 全局觸控滑動事件（解決手機跨格滑動時抓取 target 的問題）
+    gridEl.addEventListener('touchmove', (e) => {
+      if (!isMouseDown) return;
+      if (e.cancelable) e.preventDefault();
+
+      const touch = e.touches[0];
+      const target = document.elementFromPoint(touch.clientX, touch.clientY);
+      const cell = target ? target.closest('.cell') : null;
+
+      if (cell) {
+        const targetKey = cell.dataset.key;
+        if (targetKey && !draggedCells.has(targetKey)) {
+          cancelLongPress(); // 只要手指開始滑動，就取消長按
+
+          const [tr, tc] = targetKey.split('_').map(Number);
+          if (isEraserActive) {
+            handleCellAction(tr, tc, 'eraser');
+          } else if (dragIntent) {
+            const targetMarks = gameState[targetKey] || {};
+            const hasAnyConfirmed = Object.values(targetMarks).includes('confirmed');
+            if (isCrossModeActive || (!hasAnyConfirmed && targetMarks.__cross_override !== 'cross')) {
+              handleCellAction(tr, tc, 'drag-apply', dragIntent);
+            }
+          }
+          draggedCells.add(targetKey);
+        }
+      }
+    }, { passive: false });
 
     wrapper.appendChild(gridEl);
 
@@ -952,7 +965,7 @@
 
   function downloadProgress() {
     const saveData = {
-      version: "5.5",
+      version: "5.6",
       mapDimensions: "24x24",
       timestamp: new Date().toISOString(),
       gameState: gameState
