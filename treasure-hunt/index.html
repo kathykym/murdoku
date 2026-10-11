@@ -30,40 +30,54 @@
       padding: 10px 10px 30px 10px;
     }
 
-    /* Header 容器（包住 Title、Controls、Instructions）：大 Mon 置中，細 Mon 貼緊遊戲內容左對齊 */
+    /* Header 容器：防止窄螢幕溢出至左側螢幕外 */
     .header-container {
       display: flex;
       flex-direction: column;
       align-items: center;
-      width: max-content;
-      max-width: 100%;
+      width: 100%;
+      max-width: 1000px;
       margin-bottom: 12px;
+      box-sizing: border-box;
+      padding: 0 5px;
     }
 
     h1 { 
       margin: 5px 0 10px 0; 
-      font-size: 28px; /* 已改為 28px */
-      text-align: inherit; 
+      font-size: 28px; 
+      text-align: center; 
+      word-break: break-word;
     }
 
     .controls {
       display: flex;
       gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
     }
 
     .instructions {
       margin-top: 15px;
       font-size: 12px;
       color: #666;
-      text-align: inherit;
+      text-align: center;
       line-height: 1.5;
+      width: 100%;
       max-width: 650px;
+      box-sizing: border-box;
+      word-break: break-word;
     }
 
-    /* 當畫面不夠寬時（需要 Page Scroll 時），Header 內所有元素自動向左靠齊 */
-    @media (max-width: 1350px) {
+    /* 當畫面寬度小於遊戲地圖與側欄併排寬度時，自動讓 Header 貼緊左側對齊 */
+    @media (max-width: 768px) {
       .header-container {
         align-items: flex-start;
+      }
+      h1, .instructions {
+        text-align: left;
+      }
+      .controls {
+        justify-content: flex-start;
       }
     }
 
@@ -991,7 +1005,7 @@
 
   function downloadProgress() {
     const saveData = {
-      version: "6.6",
+      version: "6.8",
       mapDimensions: "24x24",
       timestamp: new Date().toISOString(),
       gameState: gameState
