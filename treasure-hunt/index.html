@@ -44,9 +44,16 @@
 
     h1 { 
       margin: 5px 0 10px 0; 
-      font-size: 24px; 
+      font-size: 28px; 
       text-align: center; 
       word-break: break-word;
+	  white-space: nowrap;
+    }
+	
+    @media (max-width: 480px) {
+      h1 {
+        font-size: 20px; /* 手機上自動微調字體大小，確保一行過 */
+      }
     }
 
     .controls {
