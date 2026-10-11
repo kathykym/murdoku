@@ -2,7 +2,7 @@
 <html lang="zh-HK">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Murdoku — The Treasure Hunt</title>
   <style>
     :root {
@@ -10,7 +10,7 @@
       --card-bg: transparent; 
       --card-hover: rgba(255, 255, 255, 0.25);
       --accent: #3498db;
-      --cross-active: #9b59b6; 
+      --cross-active: #636e72; 
       --eraser-active: #e67e22;
       --text: #333333;
       --border: transparent; 
@@ -28,11 +28,8 @@
       align-items: center;
       margin: 0;
       padding: 10px 10px 30px 10px;
-      user-select: none;
-      -webkit-user-select: none;
-      touch-action: manipulation;
     }
-    h1 { margin: 5px 0 10px 0; font-size: 20px; }
+    h1 { margin: 5px 0 10px 0; font-size: 20px; text-align: center; }
 
     .controls {
       margin-bottom: 12px;
@@ -64,6 +61,8 @@
       display: flex;
       gap: 15px;
       align-items: flex-start;
+      /* 確保不會強行縮小，靠 Page Level 滾動條滑動 */
+      width: max-content;
       max-width: 100%;
     }
 
@@ -81,8 +80,13 @@
       max-height: 82vh;
       overflow-y: auto;
       scrollbar-width: thin;
+      /* 固定寬度 310px，不壓縮、不變形 */
       width: 310px;
+      min-width: 310px;
+      flex-shrink: 0;
       box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
     }
 
     /* 工具按鈕容器 (打叉、擦膠、Undo 並排三列) */
@@ -119,12 +123,12 @@
       box-shadow: none;
     }
     
-    /* 適中飽和度的薰衣草紫打叉按鈕 */
+    /* 低飽和度柔和紫灰色系打叉按鈕 */
     .tool-btn.cross-btn.selected {
-      border-color: #9b59b6;
-      background: #f5eef8;
-      color: #8e44ad;
-      box-shadow: 0 0 5px rgba(155, 89, 182, 0.3);
+      border-color: #a4b0be;
+      background: #f1f2f6;
+      color: #57606f;
+      box-shadow: 0 0 5px rgba(116, 125, 140, 0.25);
     }
     .tool-btn.eraser-btn.selected {
       border-color: var(--eraser-active);
@@ -228,6 +232,7 @@
       margin: 2px 0;
     }
 
+    /* 地圖容器：靠頁面 Page Scroll 查看 */
     .map-container {
       display: flex;
       flex-direction: column;
@@ -237,8 +242,9 @@
       border-radius: 8px;
       padding: 6px;
       box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-      overflow-x: auto;
-      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      flex-shrink: 0;
     }
 
     .map-row-container {
@@ -278,7 +284,6 @@
       height: 960px;
       background-color: #fff;
       flex-shrink: 0;
-      touch-action: none;
     }
 
     .map-bg-img {
@@ -317,7 +322,6 @@
       justify-content: center;
       cursor: pointer;
       position: relative;
-      touch-action: none;
     }
     .cell:hover { background-color: var(--card-hover); }
 
@@ -965,7 +969,7 @@
 
   function downloadProgress() {
     const saveData = {
-      version: "6.1",
+      version: "6.3",
       mapDimensions: "24x24",
       timestamp: new Date().toISOString(),
       gameState: gameState
