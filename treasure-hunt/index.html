@@ -10,7 +10,7 @@
       --card-bg: transparent; 
       --card-hover: rgba(255, 255, 255, 0.25);
       --accent: #3498db;
-      --cross-active: #e74c3c;
+      --cross-active: #9b59b6; 
       --eraser-active: #e67e22;
       --text: #333333;
       --border: transparent; 
@@ -118,11 +118,13 @@
       cursor: not-allowed;
       box-shadow: none;
     }
+    
+    /* 適中飽和度的薰衣草紫打叉按鈕 */
     .tool-btn.cross-btn.selected {
-      border-color: var(--cross-active);
-      background: #fadbd8;
-      color: #c0392b;
-      box-shadow: 0 0 5px rgba(231, 76, 60, 0.4);
+      border-color: #9b59b6;
+      background: #f5eef8;
+      color: #8e44ad;
+      box-shadow: 0 0 5px rgba(155, 89, 182, 0.3);
     }
     .tool-btn.eraser-btn.selected {
       border-color: var(--eraser-active);
@@ -375,8 +377,8 @@
 
     .char-mark.cross {
       background: rgba(228, 230, 235, 0.5);
-      color: #000000;
       font-size: 18px;
+      font-weight: bold;
       width: 100%;
       height: 100%;
     }
@@ -963,7 +965,7 @@
 
   function downloadProgress() {
     const saveData = {
-      version: "5.7",
+      version: "6.1",
       mapDimensions: "24x24",
       timestamp: new Date().toISOString(),
       gameState: gameState
