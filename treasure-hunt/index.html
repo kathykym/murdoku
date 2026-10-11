@@ -115,7 +115,6 @@
       align-items: flex-start;
       width: max-content;
       max-width: 100%;
-	  margin-bottom: 0;
     }
 
     .sidebar {
@@ -138,6 +137,30 @@
       box-sizing: border-box;
       user-select: none;
       -webkit-user-select: none;
+    }
+
+    /* 手機版優化：防止 sidebar 撐高版面造成下方大量空白 */
+    @media (max-width: 768px) {
+      .header-container {
+        align-items: flex-start;
+      }
+      h1, .instructions {
+        text-align: left;
+      }
+      .controls {
+        justify-content: flex-start;
+      }
+
+      /* 確保地圖容器貼緊底部，不留多餘空白 */
+      .map-container {
+        padding-bottom: 4px;
+        margin-bottom: 0;
+      }
+      
+      /* 確保最下方座標行緊貼地圖 */
+      .map-row-container:last-child {
+        margin-bottom: 0;
+      }
     }
 
     /* 工具按鈕容器 (打叉、擦膠、Undo 並排三列) */
