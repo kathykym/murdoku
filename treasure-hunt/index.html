@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Murdoku — The Treasure Hunt</title>
+  <style>
+    :root {
+      --bg-color: #f0f2f5;
+      --card-bg: transparent; 
+      --card-hover: rgba(255, 255, 255, 0.25);
+      --accent: #3498db;
+      --cross-active: #e74c3c;
+      --eraser-active: #e67e22;
+      --text: #333333;
+      --border: transparent; 
+
+      /* 地圖微調變數 */
+      --map-offset-x: -2px;
+      --map-offset-y: -2px;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 0;
+      padding: 10px 10px 30px 10px;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    h1 { margin: 5px 0 10px 0; font-size: 20px; }
+
+    .controls {
+      margin-bottom: 12px;
+      display: flex;
+      gap: 8px;
+    }
+    .btn {
+      background: #ffffff;
+      color: var(--text);
+      border: 1px solid #ccd0d5;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .btn:hover:not(:disabled) { background: #f2f2f2; }
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    #file-input { display: none; }
+
+    .game-layout {
+      display: flex;
+      gap: 15px;
+      align-items: flex-start;
+      max-width: 100%;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: #ffffff;
+      padding: 10px;
+      border-radius: 8px;
+      border: 2px solid #ccd0d5;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+      max-height: 82vh;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      width: 310px;
+      box-sizing: border-box;
+    }
+
+    /* 工具按鈕容器 (打叉、擦膠、Undo 並排三列) */
+    .tools-row {
+      display: flex;
+      gap: 6px;
+      width: 100%;
+    }
+
+    .tool-btn {
+      flex: 1;
+      height: 44px; 
+      border-radius: 6px;
+      border: 1px solid #ccd0d5;
+      background: #ffffff;
+      color: var(--text);
+      font-size: 12px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      box-sizing: border-box;
+      transition: all 0.2s ease;
+      padding: 2px 4px;
+    }
+    .tool-btn:hover:not(:disabled) {
+      background: #f8f9fa;
+    }
+    .tool-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    .tool-btn.cross-btn.selected {
+      border-color: var(--cross-active);
+      background: #fadbd8;
+      color: #c0392b;
+      box-shadow: 0 0 5px rgba(231, 76, 60, 0.4);
+    }
+    .tool-btn.eraser-btn.selected {
+      border-color: var(--eraser-active);
+      background: #fdf2e9;
+      color: #d35400;
+      box-shadow: 0 0 5px rgba(230, 126, 34, 0.4);
+    }
+
+    .palette-vertical {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .char-btn {
+      width: 100%;
+      min-height: 52px;
+      border-radius: 6px;
+      border: 1px solid #ccd0d5;
+      background: #ffffff;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      padding: 6px 8px;
+      cursor: pointer;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      transition: all 0.2s ease;
+      box-sizing: border-box;
+      gap: 6px;
+      text-align: left;
+    }
+    .char-btn:hover:not(.confirmed-disabled) {
+      background: #f8f9fa;
+    }
+    .char-btn.selected {
+      border-color: var(--accent);
+      background: #ebf5fb;
+      color: #2980b9;
+    }
+    .char-btn.confirmed-disabled {
+      background: #e0e0e0 !important;
+      color: #a0a0a0 !important;
+      border-color: #ccc !important;
+      opacity: 0.6;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .char-img {
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
+      object-fit: cover;
+      flex-shrink: 0;
+      border: 1px solid #ccd0d5;
+      background-color: #f0f2f5;
+    }
+    
+    .char-badge {
+      width: 24px;
+      height: 28px;
+      border-radius: 4px;
+      background: #f0f2f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 13px;
+      flex-shrink: 0;
+      border: 1px solid #ccd0d5;
+      box-sizing: border-box;
+    }
+    .char-btn.selected .char-badge {
+      background: #3498db;
+      color: #ffffff;
+      border-color: #2980b9;
+    }
+    .char-btn.confirmed-disabled .char-badge {
+      background: #ccc;
+      color: #fff;
+    }
+    .char-btn.confirmed-disabled .char-img {
+      filter: grayscale(100%);
+      opacity: 0.6;
+    }
+
+    .char-clue {
+      font-size: 11px;
+      line-height: 1.25;
+      color: #555;
+      word-break: break-word;
+    }
+    .char-btn.confirmed-disabled .char-clue {
+      color: #888;
+      text-decoration: line-through;
+    }
+
+    .divider {
+      height: 1px;
+      background: #ccd0d5;
+      margin: 2px 0;
+    }
+
+    .map-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background-color: #ffffff;
+      border: 2px solid #ccd0d5;
+      border-radius: 8px;
+      padding: 6px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+      overflow-x: auto;
+      touch-action: none;
+    }
+
+    .map-row-container {
+      display: flex;
+      align-items: center;
+    }
+
+    .axis-label {
+      width: 40px;
+      height: 40px;
+      min-width: 40px;
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: bold;
+      color: #555;
+      background-color: #e9ecef;
+      flex-shrink: 0;
+      box-sizing: border-box;
+      border: 1px solid transparent;
+    }
+    .axis-corner {
+      width: 40px;
+      height: 40px;
+      min-width: 40px;
+      min-height: 40px;
+      background-color: #e9ecef;
+      flex-shrink: 0;
+      box-sizing: border-box;
+    }
+
+    .map-grid-wrapper {
+      position: relative;
+      width: 960px;
+      height: 960px;
+      background-color: #fff;
+      flex-shrink: 0;
+    }
+
+    .map-bg-img {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 975px;
+      height: 969px;
+      transform: translate(calc(-50% + var(--map-offset-x)), calc(-50% + var(--map-offset-y)));
+      object-fit: contain;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .map-grid {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 960px;
+      height: 960px;
+      display: grid;
+      grid-template-columns: repeat(24, 40px);
+      grid-template-rows: repeat(24, 40px);
+      z-index: 1;
+    }
+
+    .cell {
+      background-color: var(--card-bg);
+      width: 40px;
+      height: 40px;
+      box-sizing: border-box;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+    }
+    .cell:hover { background-color: var(--card-hover); }
+
+    .cell-draft-container {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      padding: 1px;
+      box-sizing: border-box;
+      align-content: center;
+      justify-items: center;
+    }
+
+    .char-mark {
+      font-size: 8px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      border-radius: 2px;
+    }
+    .char-mark.draft {
+      background: rgba(255, 255, 255, 0.85);
+      color: #111;
+      box-shadow: 0 0 2px rgba(0,0,0,0.3);
+    }
+    
+    .char-mark.confirmed {
+      background-color: rgba(241, 196, 15, 0.65);
+      border: none;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-size: 26px;
+      font-weight: 900;
+      box-sizing: border-box;
+      text-shadow: 
+        -1px -1px 0 #000,  
+         1px -1px 0 #000,
+        -1px  1px 0 #000,
+         1px  1px 0 #000,
+         0px -1px 0 #000,
+         0px  1px 0 #000,
+        -1px  0px 0 #000,
+         1px  0px 0 #000;
+      -webkit-text-stroke: 1px #000;
+    }
+
+    .char-mark.cross {
+      background: rgba(228, 230, 235, 0.5);
+      color: #000000;
+      font-size: 18px;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* 長按 0.5 秒後出現的旋轉指示器 */
+    .holding-indicator {
+      position: absolute;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 3px solid rgba(241, 196, 15, 0.4);
+      border-top-color: #f1c40f;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: bold;
+      color: #f1c40f;
+      background: rgba(0, 0, 0, 0.8);
+      animation: spinProgress 1s linear infinite;
+      pointer-events: none;
+      box-sizing: border-box;
+      z-index: 10;
+    }
+
+    @keyframes spinProgress {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .instructions {
+      margin-top: 15px;
+      font-size: 12px;
+      color: #666;
+      text-align: center;
+      max-width: 650px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🕵️‍♂️ Murdoku — The Treasure Hunt</h1>
+
+  <div class="controls">
+    <button class="btn" onclick="downloadProgress()">📥 下載進度 (JSON)</button>
+    <button class="btn" onclick="document.getElementById('file-input').click()">📤 還原進度</button>
+    <input type="file" id="file-input" accept=".json" onchange="uploadProgress(event)">
+  </div>
+
+  <div class="game-layout">
+    <div class="sidebar">
+      <div class="tools-row">
+        <button class="tool-btn cross-btn" id="crossBtn" onclick="toggleCrossMode()">❌ 打叉</button>
+        <button class="tool-btn eraser-btn" id="eraserBtn" onclick="toggleEraser()">🧹 擦膠</button>
+        <button class="tool-btn" id="undoBtn" onclick="undoAction()" disabled>↩️ Undo</button>
+      </div>
+      <div class="divider"></div>
+      <div class="palette-vertical" id="palette"></div>
+    </div>
+
+    <div class="map-container" id="mapContainer"></div>
+  </div>
+
+  <div class="instructions">
+    💡 <b>操作說明：</b><br>
+    • <b>Click / Touch</b>：點擊地圖格仔即可標記或移除標記。<br>
+    • <b>Drag 拖曳標記</b>：在格仔上連續滑動即可批次標記（依據第一格的動作自動鎖定為新增或刪除）。<br>
+    • <b>長按</b>：按住格仔 0.5 秒開始旋轉動畫，繼續按住 1 秒（共 1.5 秒）可「確定鎖定」該角色。<br>
+    • <b>鍵盤快捷鍵</b>：按 Ctrl + Z 可 Undo 上一步操作。
+  </div>
+
+<script>
+  const CHARACTER_DATA = [
+    { id: 'char_A', name: 'A', clue: 'He was <b>beside</b> a <b>fire</b>.' },
+    { id: 'char_B', name: 'B', clue: 'He was on a <b>hammock</b>. There was <b>no sack</b> anywhere in his <b>column</b>.' },
+    { id: 'char_C', name: 'C', clue: 'Someone exactly <b>eight rows north of him</b> was <b>beside</b> the <b>tombstone</b>.' },
+    { id: 'char_D', name: 'D', clue: 'He was <b>east</b> of <b>Griselda</b> and <b>west</b> of <b>Linus</b>.' },
+    { id: 'char_E', name: 'E', clue: 'She was <b>beside</b> a <b>shelf</b>.' },
+    { id: 'char_F', name: 'F', clue: 'She was <b>beside</b> some <b>flowers</b>.' },
+    { id: 'char_G', name: 'G', clue: 'She was in the <b>top row</b> of her <b>area</b>.' },
+    { id: 'char_H', name: 'H', clue: 'She was on the <b>Cliff</b>. <b>No one</b> in an <b>adjacent column</b> wore a <b>hat</b>.' },
+    { id: 'char_I', name: 'I', clue: 'She was sitting in a <b>chair</b>. She was in a <b>Cabin</b> with someone wearing an <b>eyepatch</b>.' },
+    { id: 'char_J', name: 'J', clue: 'He was <b>beside</b> a <b>barrel</b>.' },
+    { id: 'char_K', name: 'K', clue: 'She was on a <b>Sloop</b>.' },
+    { id: 'char_L', name: 'L', clue: 'He was <b>beside</b> a <b>tree</b>.' },
+    { id: 'char_M', name: 'M', clue: 'He was on a <b>ship</b>, <b>beside</b> some <b>rope</b>.' },
+    { id: 'char_N', name: 'N', clue: 'He was in the <b>Water</b>, <b>beside</b> a <b>ship</b>.' },
+    { id: 'char_O', name: 'O', clue: 'He was on a <b>ship</b>.' },
+    { id: 'char_P', name: 'P', clue: 'He was on a <b>bed</b>.' },
+    { id: 'char_Q', name: 'Q', clue: 'He was in the <b>Water</b>, <b>beside</b> a <b>shark</b>.' },
+    { id: 'char_R', name: 'R', clue: 'She was sitting in a <b>chair</b>.' },
+    { id: 'char_S', name: 'S', clue: 'She was <b>at least six rows north</b> of <b>Linus</b>.' },
+    { id: 'char_U', name: 'U', clue: 'She was <b>in front of</b> a <b>door</b>.' },
+    { id: 'char_W', name: 'W', clue: 'He was <b>beside</b> a <b>pig</b>.' },
+    { id: 'char_Y', name: 'Y', clue: 'He was in the <b>Woods</b>. He was <b>not beside</b> a <b>tree</b>.' },
+    { id: 'char_Z', name: 'Z', clue: 'She was <b>beside</b> a <b>shrub</b>.' },
+    { id: 'char_T', name: 'T', clue: 'In the <b>last square</b>. It can be buried beneath an object that cannot otherwise be occupied.' }
+  ];
+
+  let selectedCharId = null; 
+  let isCrossModeActive = false; 
+  let isEraserActive = false; 
+  const GRID_SIZE = 24;
+  
+  let gameState = {};
+  let historyStack = [];
+  const MAX_HISTORY = 50;
+
+  let isMouseDown = false;
+  let draggedCells = new Set();
+  let dragIntent = null;
+  let showIndicatorTimer = null;
+  let confirmTimer = null;
+  let currentHoldingCell = null;
+
+  function saveHistory() {
+    historyStack.push(JSON.stringify(gameState));
+    if (historyStack.length > MAX_HISTORY) historyStack.shift();
+    updateUndoUI();
+  }
+
+  function undoAction() {
+    if (historyStack.length === 0) return;
+    gameState = JSON.parse(historyStack.pop());
+    renderGrid();
+    updateToolbarUI();
+    updateUndoUI();
+  }
+
+  function updateUndoUI() {
+    const undoBtn = document.getElementById('undoBtn');
+    if (undoBtn) undoBtn.disabled = historyStack.length === 0;
+  }
+
+  function getConfirmedCharIds() {
+    const confirmedSet = new Set();
+    Object.values(gameState).forEach(cellMarks => {
+      Object.keys(cellMarks).forEach(charId => {
+        if (cellMarks[charId] === 'confirmed') {
+          confirmedSet.add(charId);
+        }
+      });
+    });
+    return confirmedSet;
+  }
+
+  function initPalette() {
+    const paletteEl = document.getElementById('palette');
+    paletteEl.innerHTML = '';
+    
+    CHARACTER_DATA.forEach(char => {
+      const btn = document.createElement('div');
+      btn.className = 'char-btn';
+      btn.dataset.charId = char.id;
+
+      const img = document.createElement('img');
+      img.className = 'char-img';
+      img.src = `img/char_${char.name}.jpg?v=${Date.now()}`;
+      img.alt = char.name;
+
+      img.onerror = function() {
+        this.style.display = 'none';
+      };
+
+      const badge = document.createElement('div');
+      badge.className = 'char-badge';
+      badge.innerText = char.name;
+
+      const clueEl = document.createElement('div');
+      clueEl.className = 'char-clue';
+      clueEl.innerHTML = char.clue;
+
+      btn.appendChild(img);
+      btn.appendChild(badge);
+      btn.appendChild(clueEl);
+
+      btn.onclick = () => {
+        const confirmedChars = getConfirmedCharIds();
+        if (confirmedChars.has(char.id)) return;
+        isCrossModeActive = false;
+        isEraserActive = false;
+        selectedCharId = char.id;
+        updateToolbarUI();
+      };
+      paletteEl.appendChild(btn);
+    });
+    updateToolbarUI();
+  }
+
+  function toggleCrossMode() {
+    isCrossModeActive = !isCrossModeActive;
+    if (isCrossModeActive) {
+      isEraserActive = false;
+      selectedCharId = null;
+    }
+    updateToolbarUI();
+  }
+
+  function toggleEraser() {
+    isEraserActive = !isEraserActive;
+    if (isEraserActive) {
+      isCrossModeActive = false;
+      selectedCharId = null;
+    }
+    updateToolbarUI();
+  }
+
+  function updateToolbarUI() {
+    const crossBtn = document.getElementById('crossBtn');
+    crossBtn.className = `tool-btn cross-btn ${isCrossModeActive ? 'selected' : ''}`;
+
+    const eraserBtn = document.getElementById('eraserBtn');
+    eraserBtn.className = `tool-btn eraser-btn ${isEraserActive ? 'selected' : ''}`;
+
+    const confirmedChars = getConfirmedCharIds();
+
+    const charBtns = document.querySelectorAll('.char-btn');
+    charBtns.forEach((btn) => {
+      const charId = btn.dataset.charId;
+      const isConfirmed = confirmedChars.has(charId);
+
+      btn.className = 'char-btn';
+      if (isConfirmed) {
+        btn.classList.add('confirmed-disabled');
+      } else if (!isCrossModeActive && !isEraserActive && charId === selectedCharId) {
+        btn.classList.add('selected');
+      }
+    });
+  }
+
+  function cancelLongPress() {
+    if (showIndicatorTimer) {
+      clearTimeout(showIndicatorTimer);
+      showIndicatorTimer = null;
+    }
+    if (confirmTimer) {
+      clearTimeout(confirmTimer);
+      confirmTimer = null;
+    }
+    if (currentHoldingCell) {
+      const indicator = currentHoldingCell.querySelector('.holding-indicator');
+      if (indicator) indicator.remove();
+      currentHoldingCell = null;
+    }
+  }
+
+  function buildGridStructure(container) {
+    container.innerHTML = '';
+
+    // 1. Top Axis (C1 - C24)
+    const topRow = document.createElement('div');
+    topRow.className = 'map-row-container';
+    topRow.appendChild(createCorner());
+    for (let i = 1; i <= GRID_SIZE; i++) {
+      const lbl = document.createElement('div');
+      lbl.className = 'axis-label';
+      lbl.innerText = `C${i}`;
+      topRow.appendChild(lbl);
+    }
+    topRow.appendChild(createCorner());
+    container.appendChild(topRow);
+
+    // 2. Middle Section (Left Axis + Wrapper + Right Axis)
+    const middleContainer = document.createElement('div');
+    middleContainer.style.display = 'flex';
+
+    const leftCol = document.createElement('div');
+    leftCol.style.display = 'flex';
+    leftCol.style.flexDirection = 'column';
+    for (let i = 1; i <= GRID_SIZE; i++) {
+      const lbl = document.createElement('div');
+      lbl.className = 'axis-label';
+      lbl.innerText = `R${i}`;
+      leftCol.appendChild(lbl);
+    }
+
+    const rightCol = document.createElement('div');
+    rightCol.style.display = 'flex';
+    rightCol.style.flexDirection = 'column';
+    for (let i = 1; i <= GRID_SIZE; i++) {
+      const lbl = document.createElement('div');
+      lbl.className = 'axis-label';
+      lbl.innerText = `R${i}`;
+      rightCol.appendChild(lbl);
+    }
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'map-grid-wrapper';
+
+    const mapImg = document.createElement('img');
+    mapImg.className = 'map-bg-img';
+    mapImg.src = `img/map.jpg?v=${Date.now()}`;
+    mapImg.alt = "Map Background";
+    wrapper.appendChild(mapImg);
+
+    const gridEl = document.createElement('div');
+    gridEl.className = 'map-grid';
+
+    for (let r = 0; r < GRID_SIZE; r++) {
+      for (let c = 0; c < GRID_SIZE; c++) {
+        const key = `${r}_${c}`;
+        if (!gameState[key]) gameState[key] = {};
+
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.dataset.key = key;
+
+        const startAction = (e) => {
+          if (!selectedCharId && !isCrossModeActive && !isEraserActive) return;
+
+          isMouseDown = true;
+          draggedCells.clear();
+          draggedCells.add(key);
+
+          const cellMarks = gameState[key];
+          const hasAnyConfirmed = Object.values(cellMarks).includes('confirmed');
+
+          if (isEraserActive) {
+            dragIntent = 'eraser';
+            handleCellAction(r, c, 'eraser');
+            return;
+          }
+
+          if (isCrossModeActive) {
+            dragIntent = cellMarks.__cross_override === 'cross' ? 'remove' : 'add';
+            handleCellAction(r, c, 'drag-apply', dragIntent);
+            return;
+          }
+
+          if (hasAnyConfirmed || cellMarks.__cross_override === 'cross') return;
+          if (getConfirmedCharIds().has(selectedCharId)) return;
+
+          const currentStatus = cellMarks[selectedCharId];
+          dragIntent = currentStatus === 'draft' ? 'remove' : 'add';
+
+          handleCellAction(r, c, 'drag-apply', dragIntent);
+
+          cancelLongPress();
+          currentHoldingCell = cell;
+
+          const charObj = CHARACTER_DATA.find(ch => ch.id === selectedCharId);
+          if (charObj) {
+            // 階段 1：按住 0.5 秒後出現旋轉動畫圈圈
+            showIndicatorTimer = setTimeout(() => {
+              if (currentHoldingCell === cell) {
+                const holdingEl = document.createElement('div');
+                holdingEl.className = 'holding-indicator';
+                holdingEl.innerText = charObj.name;
+                cell.appendChild(holdingEl);
+
+                // 階段 2：再繼續 Hold 1 秒（共 1.5 秒）觸發 Confirm
+                confirmTimer = setTimeout(() => {
+                  cancelLongPress(); // 移除動畫圈圈
+                  handleCellAction(r, c, 'longpress'); // 執行 Confirm 鎖定
+                }, 1000);
+              }
+            }, 500);
+          }
+        };
+
+        const enterAction = () => {
+          if (!isMouseDown) return;
+
+          cancelLongPress();
+
+          if (draggedCells.has(key)) return;
+
+          if (isEraserActive) {
+            handleCellAction(r, c, 'eraser');
+            draggedCells.add(key);
+          } else if (dragIntent) {
+            const targetMarks = gameState[key] || {};
+            const hasAnyConfirmed = Object.values(targetMarks).includes('confirmed');
+            if (isCrossModeActive || (!hasAnyConfirmed && targetMarks.__cross_override !== 'cross')) {
+              handleCellAction(r, c, 'drag-apply', dragIntent);
+              draggedCells.add(key);
+            }
+          }
+        };
+
+        cell.addEventListener('mousedown', startAction);
+        cell.addEventListener('mouseenter', enterAction);
+
+        cell.addEventListener('touchstart', (e) => {
+          e.preventDefault();
+          startAction(e);
+        });
+
+        cell.addEventListener('touchmove', (e) => {
+          const touch = e.touches[0];
+          const target = document.elementFromPoint(touch.clientX, touch.clientY);
+          if (target && target.classList.contains('cell')) {
+            const targetKey = target.dataset.key;
+            if (targetKey && !draggedCells.has(targetKey)) {
+              cancelLongPress();
+
+              const [tr, tc] = targetKey.split('_').map(Number);
+              if (isEraserActive) {
+                handleCellAction(tr, tc, 'eraser');
+              } else if (dragIntent) {
+                const targetMarks = gameState[targetKey] || {};
+                const hasAnyConfirmed = Object.values(targetMarks).includes('confirmed');
+                if (isCrossModeActive || (!hasAnyConfirmed && targetMarks.__cross_override !== 'cross')) {
+                  handleCellAction(tr, tc, 'drag-apply', dragIntent);
+                }
+              }
+              draggedCells.add(targetKey);
+            }
+          }
+        });
+
+        gridEl.appendChild(cell);
+      }
+    }
+
+    wrapper.appendChild(gridEl);
+
+    middleContainer.appendChild(leftCol);
+    middleContainer.appendChild(wrapper);
+    middleContainer.appendChild(rightCol);
+    container.appendChild(middleContainer);
+
+    // 3. Bottom Axis
+    const bottomRow = document.createElement('div');
+    bottomRow.className = 'map-row-container';
+    bottomRow.appendChild(createCorner());
+    for (let i = 1; i <= GRID_SIZE; i++) {
+      const lbl = document.createElement('div');
+      lbl.className = 'axis-label';
+      lbl.innerText = `C${i}`;
+      bottomRow.appendChild(lbl);
+    }
+    bottomRow.appendChild(createCorner());
+    container.appendChild(bottomRow);
+  }
+
+  function buildBoardWithAxes() {
+    const container = document.getElementById('mapContainer');
+    container.innerHTML = '';
+
+    const endDrag = () => {
+      isMouseDown = false;
+      draggedCells.clear();
+      dragIntent = null;
+      cancelLongPress();
+    };
+
+    document.addEventListener('mouseup', endDrag);
+    document.addEventListener('touchend', endDrag);
+
+    buildGridStructure(container);
+    renderGrid();
+  }
+
+  function createCorner() {
+    const corner = document.createElement('div');
+    corner.className = 'axis-corner';
+    return corner;
+  }
+
+  function handleCellAction(r, c, actionType, intent = null) {
+    const key = `${r}_${c}`;
+    let cellMarks = gameState[key];
+
+    if (actionType === 'eraser') {
+      saveHistory();
+      gameState[key] = {};
+      renderGrid();
+      updateToolbarUI();
+      return;
+    }
+
+    if (isCrossModeActive) {
+      if (actionType === 'drag-apply') {
+        saveHistory();
+        if (intent === 'add') {
+          gameState[key] = { __cross_override: 'cross' };
+        } else if (intent === 'remove' && cellMarks.__cross_override === 'cross') {
+          delete gameState[key].__cross_override;
+        }
+      }
+      renderGrid();
+      updateToolbarUI();
+      return;
+    }
+
+    if (!selectedCharId) return;
+
+    const hasAnyConfirmed = Object.values(cellMarks).includes('confirmed');
+    let currentStatus = cellMarks[selectedCharId];
+
+    if (actionType === 'drag-apply') {
+      if (hasAnyConfirmed || cellMarks.__cross_override === 'cross' || currentStatus === 'cross') return; 
+
+      saveHistory();
+      if (intent === 'add' && !currentStatus) {
+        cellMarks[selectedCharId] = 'draft';
+      } else if (intent === 'remove' && currentStatus === 'draft') {
+        delete cellMarks[selectedCharId];
+      }
+    } else if (actionType === 'longpress') {
+      saveHistory();
+      if (currentStatus === 'confirmed') {
+        delete cellMarks[selectedCharId];
+      } else {
+        delete cellMarks.__cross_override;
+        gameState[key] = { [selectedCharId]: 'confirmed' };
+
+        for (let i = 0; i < GRID_SIZE; i++) {
+          let rowKey = `${r}_${i}`;
+          if (i !== c) {
+            if (!gameState[rowKey]) gameState[rowKey] = {};
+            gameState[rowKey] = { __cross_override: 'cross' };
+          }
+          let colKey = `${i}_${c}`;
+          if (i !== r) {
+            if (!gameState[colKey]) gameState[colKey] = {};
+            gameState[colKey] = { __cross_override: 'cross' };
+          }
+        }
+      }
+    }
+
+    renderGrid();
+    updateToolbarUI();
+  }
+
+  function renderGrid() {
+    for (let r = 0; r < GRID_SIZE; r++) {
+      for (let c = 0; c < GRID_SIZE; c++) {
+        const key = `${r}_${c}`;
+        const cell = document.querySelector(`[data-key="${key}"]`);
+        if (!cell) continue;
+        
+        const holdingEl = cell.querySelector('.holding-indicator');
+        cell.innerHTML = '';
+        if (holdingEl) cell.appendChild(holdingEl);
+
+        const cellMarks = gameState[key] || {};
+
+        if (cellMarks.__cross_override === 'cross') {
+          const mark = document.createElement('div');
+          mark.className = 'char-mark cross';
+          mark.innerText = '❌';
+          cell.appendChild(mark);
+          continue;
+        }
+
+        const draftKeys = Object.keys(cellMarks).filter(k => k !== '__cross_override' && cellMarks[k] === 'draft');
+        const confirmedKey = Object.keys(cellMarks).find(k => cellMarks[k] === 'confirmed');
+
+        if (confirmedKey) {
+          const charObj = CHARACTER_DATA.find(ch => ch.id === confirmedKey);
+          if (charObj) {
+            const mark = document.createElement('div');
+            mark.className = 'char-mark confirmed';
+            mark.innerText = charObj.name;
+            cell.appendChild(mark);
+          }
+        } else if (draftKeys.length > 0) {
+          const draftContainer = document.createElement('div');
+          draftContainer.className = 'cell-draft-container';
+
+          draftKeys.forEach(charId => {
+            const charObj = CHARACTER_DATA.find(ch => ch.id === charId);
+            if (charObj) {
+              const mark = document.createElement('div');
+              mark.className = 'char-mark draft';
+              mark.innerText = charObj.name;
+              draftContainer.appendChild(mark);
+            }
+          });
+          cell.appendChild(draftContainer);
+        }
+      }
+    }
+  }
+
+  function downloadProgress() {
+    const saveData = {
+      version: "5.5",
+      mapDimensions: "24x24",
+      timestamp: new Date().toISOString(),
+      gameState: gameState
+    };
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(saveData, null, 2));
+    const a = document.createElement('a');
+    a.href = dataStr;
+    a.download = `murdoku_24x24_save_${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  function uploadProgress(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (data && data.gameState) {
+          saveHistory();
+          gameState = data.gameState;
+          renderGrid();
+          updateToolbarUI();
+          alert("進度成功還原！");
+        } else {
+          alert("存檔格式不正確！");
+        }
+      } catch (err) {
+        alert("檔案解析失敗！");
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+      e.preventDefault();
+      undoAction();
+    }
+  });
+
+  initPalette();
+  buildBoardWithAxes();
+</script>
+</body>
+</html>
