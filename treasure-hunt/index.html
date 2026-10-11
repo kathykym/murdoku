@@ -236,7 +236,7 @@
       padding: 6px;
       box-shadow: 0 4px 6px rgba(0,0,0,0.05);
       overflow-x: auto;
-      touch-action: none; /* 防止滑動地圖時觸發網頁滾動 */
+      touch-action: none;
     }
 
     .map-row-container {
@@ -329,7 +329,7 @@
       box-sizing: border-box;
       align-content: center;
       justify-items: center;
-      pointer-events: none; /* 確保屬性不影響抓取 .cell */
+      pointer-events: none;
     }
 
     .char-mark {
@@ -381,7 +381,7 @@
       height: 100%;
     }
 
-    /* 長按 0.5 秒後出現的旋轉指示器 */
+    /* 長按 0.3 秒後出現的旋轉指示器 */
     .holding-indicator {
       position: absolute;
       width: 32px;
@@ -445,7 +445,7 @@
     💡 <b>操作說明：</b><br>
     • <b>Click / Touch</b>：點擊地圖格仔即可標記或移除標記。<br>
     • <b>Drag 拖曳標記</b>：在格仔上連續滑動即可批次標記（依據第一格的動作自動鎖定為新增或刪除）。<br>
-    • <b>長按</b>：按住格仔 0.5 秒開始旋轉動畫，繼續按住 1 秒（共 1.5 秒）可「確定鎖定」該角色。<br>
+    • <b>長按</b>：按住格仔 0.3 秒開始旋轉動畫，繼續按住 0.5 秒（共 0.8 秒）可「確定鎖定」該角色。<br>
     • <b>鍵盤快捷鍵</b>：按 Ctrl + Z 可 Undo 上一步操作。
   </div>
 
@@ -720,7 +720,7 @@
 
           const charObj = CHARACTER_DATA.find(ch => ch.id === selectedCharId);
           if (charObj) {
-            // 階段 1：按住 0.5 秒後出現旋轉動畫圈圈
+            // 階段 1：按住 0.3 秒後出現旋轉動畫圈圈
             showIndicatorTimer = setTimeout(() => {
               if (currentHoldingCell === cell) {
                 const holdingEl = document.createElement('div');
@@ -728,13 +728,13 @@
                 holdingEl.innerText = charObj.name;
                 cell.appendChild(holdingEl);
 
-                // 階段 2：再繼續 Hold 1 秒（共 1.5 秒）觸發 Confirm
+                // 階段 2：再繼續 Hold 0.5 秒（共 0.8 秒）觸發 Confirm
                 confirmTimer = setTimeout(() => {
                   cancelLongPress(); // 移除動畫圈圈
                   handleCellAction(r, c, 'longpress'); // 執行 Confirm 鎖定
-                }, 1000);
+                }, 500);
               }
-            }, 500);
+            }, 300);
           }
         };
 
@@ -762,7 +762,6 @@
         cell.addEventListener('mouseenter', enterAction);
 
         cell.addEventListener('touchstart', (e) => {
-          // 阻止滾動與預設點擊事件，確保滑動能正常處理
           if (e.cancelable) e.preventDefault();
           startAction(e);
         }, { passive: false });
@@ -771,7 +770,6 @@
       }
     }
 
-    // 全局觸控滑動事件（解決手機跨格滑動時抓取 target 的問題）
     gridEl.addEventListener('touchmove', (e) => {
       if (!isMouseDown) return;
       if (e.cancelable) e.preventDefault();
@@ -783,7 +781,7 @@
       if (cell) {
         const targetKey = cell.dataset.key;
         if (targetKey && !draggedCells.has(targetKey)) {
-          cancelLongPress(); // 只要手指開始滑動，就取消長按
+          cancelLongPress();
 
           const [tr, tc] = targetKey.split('_').map(Number);
           if (isEraserActive) {
@@ -965,7 +963,7 @@
 
   function downloadProgress() {
     const saveData = {
-      version: "5.6",
+      version: "5.7",
       mapDimensions: "24x24",
       timestamp: new Date().toISOString(),
       gameState: gameState
