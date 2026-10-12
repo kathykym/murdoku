@@ -400,7 +400,7 @@
     }
     .cell:hover { background-color: var(--card-hover); }
 
-    /* 修改：讓 Draft 標記從左上角開始排列 */
+    /* Draft 標記從左上角開始排列 */
     .cell-draft-container {
       width: 100%;
       height: 100%;
@@ -424,6 +424,7 @@
       height: 100%;
       border-radius: 2px;
       pointer-events: none;
+      box-sizing: border-box;
     }
     .char-mark.draft {
       background: rgba(255, 255, 255, 0.85);
@@ -431,14 +432,16 @@
       box-shadow: 0 0 2px rgba(0,0,0,0.3);
     }
     
-    /* 角色高亮樣式 (藍色 Highlight) */
+    /* 修正：使用 Outer Glow (box-shadow) 高亮，不佔用佈局、不推開文字 */
     .char-mark.draft.highlighted {
       background: #ebf5fb !important;
-      border: 2px solid var(--accent) !important;
-      box-shadow: 0 0 6px rgba(52, 152, 219, 0.6);
+      color: #2980b9 !important;
+      box-shadow: 0 0 0 2px var(--accent), 0 0 6px rgba(52, 152, 219, 0.7) !important;
+      z-index: 5;
     }
     .char-mark.confirmed.highlighted {
-      box-shadow: 0 0 10px 3px #3498db !important;
+      box-shadow: 0 0 0 3px #3498db, 0 0 10px 4px rgba(52, 152, 219, 0.8) !important;
+      z-index: 5;
     }
     
     .char-mark.confirmed {
